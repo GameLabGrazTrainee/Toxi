@@ -33,6 +33,7 @@
 
 # Visual Studio cache directory
 .vs/
+.vsconfig
 
 # Gradle cache directory
 .gradle/
@@ -72,6 +73,7 @@ mono_crash.*
 *.unitypackage
 *.unitypackage.meta
 *.app
+/Builds
 
 # Crashlytics generated file
 crashlytics-build.properties
