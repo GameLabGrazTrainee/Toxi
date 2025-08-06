@@ -7,6 +7,10 @@ TagManager:
   - PickUp
   - Enemy
   - ToxiTarget
+  - Insult
+  - Disruption of Gameplay
+  - Threat
+  - Ill Wish
   layers:
   - Default
   - TransparentFX

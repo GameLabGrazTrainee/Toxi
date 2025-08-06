@@ -3,6 +3,20 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using TMPro;
+using System;
+
+public enum ToxicType
+{
+    Not, Insult, Disruption, Threat, IllWish
+}
+
+[Serializable]
+public class Messages
+{
+    public string messageText;
+    public string username;
+    public ToxicType isToxic;
+}
 
 public class PlayerController : MonoBehaviour
 {
@@ -19,9 +33,8 @@ public class PlayerController : MonoBehaviour
     private int livesCount;
     private float movementX;
     private float movementY;
-    public List<string> messageList;
-    public List<string> usernameList;
-    public List<bool> isToxic;
+    public List<Messages> messages2;
+    
     private int currentMessage = 0;
     private int currentUsername = 0;
     public float messageInterval = 10f;
@@ -38,6 +51,11 @@ public class PlayerController : MonoBehaviour
     public Transform respawnPoint;
     public Transform quizLocation;
 
+    //0 = not toxic
+    //1 = Insult
+    //2 = Disruption of Gameplay
+    //3 = Threat
+    //4 = Ill Wish
 
     // Start is called before the first frame update
     void Start()
@@ -52,15 +70,15 @@ public class PlayerController : MonoBehaviour
         ShowNextMessage();
         goodMessage.gameObject.SetActive(false);
         badMessage.gameObject.SetActive(false);
+        //this.transform.position = quizLocation.position;
     }
 
     void ShowNextMessage()
     {
-        currentMessage = Random.Range(0, messageList.Count);
-        messageText.GetComponent<TextMeshProUGUI>().text = messageList[currentMessage];
-        currentUsername = Random.Range(0, usernameList.Count);
-        usernameText.GetComponent<TextMeshProUGUI>().text = usernameList[currentUsername];
-        if (isToxic[currentMessage] == true)
+        currentMessage = UnityEngine.Random.Range(0, messages2.Count);
+        messageText.GetComponent<TextMeshProUGUI>().text = messages2[currentMessage].messageText;
+        usernameText.GetComponent<TextMeshProUGUI>().text = messages2[currentUsername].username;
+        if (messages2[currentMessage].isToxic != ToxicType.Not)
         {
             isToxiFollowing = false;
         }
@@ -70,7 +88,7 @@ public class PlayerController : MonoBehaviour
     {
         isFeedbackMessageShown = true;
         feedbackMessageTimer = 0f;
-        if (isToxic[currentMessage]== false)
+        if (messages2[currentMessage].isToxic == ToxicType.Not)
         {
             speed = baseSpeed * 0.6f;
             goodMessage.gameObject.SetActive(false);
@@ -82,7 +100,7 @@ public class PlayerController : MonoBehaviour
             goodMessage.gameObject.SetActive(true);
             badMessage.gameObject.SetActive(false);
             Enemy.GetComponent<EnemyMovement>().stopChasingPlayer();
-            this.transform.position = quizLocation.position;
+            messageInterval = 15f;
         }
     }
 
@@ -95,6 +113,7 @@ public class PlayerController : MonoBehaviour
         {
             ShowNextMessage();
             messageTimer = 0f;
+            messageInterval = 7f;
            
         }
         if (isFeedbackMessageShown == true)
@@ -132,7 +151,7 @@ public class PlayerController : MonoBehaviour
 
     void SetLivesText()
     {
-        livesText.text = "Lives: " + livesCount.ToString() + "/3";
+        livesText.text = "Lives: " + livesCount.ToString();
         if (livesCount <= 0)
         {
             winTextObject.gameObject.SetActive(true);
@@ -159,7 +178,26 @@ public class PlayerController : MonoBehaviour
             audioSource.clip = coin;
             audioSource.Play();
         }
-        
+
+        if (other.gameObject.CompareTag("Insult") && messages2[currentMessage].isToxic == ToxicType.Insult)
+        {
+            livesCount = livesCount + 1;
+        }
+
+        if (other.gameObject.CompareTag("Disruption of Gameplay") && messages2[currentMessage].isToxic == ToxicType.Disruption)
+        {
+            livesCount = livesCount + 1;
+        }
+
+        if (other.gameObject.CompareTag("Threat") && messages2[currentMessage].isToxic == ToxicType.Threat)
+        {
+            livesCount = livesCount + 1;
+        }
+
+        if (other.gameObject.CompareTag("Ill Wish") && messages2[currentMessage].isToxic == ToxicType.IllWish)
+        {
+            livesCount = livesCount + 1;
+        }
     }
 
     private void OnCollisionEnter(Collision collision)
