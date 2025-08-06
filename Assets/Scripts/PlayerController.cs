@@ -7,7 +7,7 @@ using System;
 
 public enum ToxicType
 {
-    Not, Insult, Disruption, Threat, IllWish
+    Not, Insult, DisruptionOfGameplay, Threat, IllWish
 }
 
 [Serializable]
@@ -25,7 +25,9 @@ public class PlayerController : MonoBehaviour
     public TextMeshProUGUI messageText;
     public TextMeshProUGUI usernameText;
     public TextMeshProUGUI goodMessage;
-    public TextMeshProUGUI badMessage; 
+    public TextMeshProUGUI badMessage;
+    public TextMeshProUGUI rightCategoryMessage;
+    public TextMeshProUGUI wrongCategoryMessage;
     public TextMeshProUGUI livesText;
     public GameObject winTextObject;
     private Rigidbody rb;
@@ -42,6 +44,9 @@ public class PlayerController : MonoBehaviour
     public float feedbackMessageInterval = 5f;
     private float feedbackMessageTimer;
     private bool isFeedbackMessageShown = false;
+    public float categoryMessageInterval = 5f;
+    private float categoryMessageTimer;
+    private bool isCategoryMessageShown = false;
     private bool isToxiFollowing = true;
     public float baseSpeed = 0;
     public GameObject Enemy;
@@ -51,12 +56,8 @@ public class PlayerController : MonoBehaviour
     public Transform respawnPoint;
     public Transform quizLocation;
 
-    //0 = not toxic
-    //1 = Insult
-    //2 = Disruption of Gameplay
-    //3 = Threat
-    //4 = Ill Wish
 
+    
     // Start is called before the first frame update
     void Start()
     {
@@ -70,12 +71,15 @@ public class PlayerController : MonoBehaviour
         ShowNextMessage();
         goodMessage.gameObject.SetActive(false);
         badMessage.gameObject.SetActive(false);
+        rightCategoryMessage.gameObject.SetActive(false);
+        wrongCategoryMessage.gameObject.SetActive(false);
         //this.transform.position = quizLocation.position;
     }
 
     void ShowNextMessage()
     {
         currentMessage = UnityEngine.Random.Range(0, messages2.Count);
+        currentUsername = UnityEngine.Random.Range(0, messages2.Count);
         messageText.GetComponent<TextMeshProUGUI>().text = messages2[currentMessage].messageText;
         usernameText.GetComponent<TextMeshProUGUI>().text = messages2[currentUsername].username;
         if (messages2[currentMessage].isToxic != ToxicType.Not)
@@ -93,14 +97,19 @@ public class PlayerController : MonoBehaviour
             speed = baseSpeed * 0.6f;
             goodMessage.gameObject.SetActive(false);
             badMessage.gameObject.SetActive(true);
+            rightCategoryMessage.gameObject.SetActive(false);
+            wrongCategoryMessage.gameObject.SetActive(false);
         }
         else
         {
             speed = baseSpeed * 1.2f;
             goodMessage.gameObject.SetActive(true);
             badMessage.gameObject.SetActive(false);
+            rightCategoryMessage.gameObject.SetActive(false);
+            wrongCategoryMessage.gameObject.SetActive(false);
             Enemy.GetComponent<EnemyMovement>().stopChasingPlayer();
             messageInterval = 15f;
+            this.transform.position = quizLocation.position;
         }
     }
 
@@ -116,6 +125,7 @@ public class PlayerController : MonoBehaviour
             messageInterval = 7f;
            
         }
+
         if (isFeedbackMessageShown == true)
         {
             feedbackMessageTimer = feedbackMessageTimer + Time.deltaTime;
@@ -125,6 +135,19 @@ public class PlayerController : MonoBehaviour
                 badMessage.gameObject.SetActive(false);
                 isFeedbackMessageShown = false;
                 feedbackMessageTimer = 0f;
+
+            }
+        }
+
+        if (isCategoryMessageShown == true)
+        {
+            categoryMessageTimer = categoryMessageTimer + Time.deltaTime;
+            if (categoryMessageTimer > categoryMessageInterval)
+            {
+                rightCategoryMessage.gameObject.SetActive(false);
+                wrongCategoryMessage.gameObject.SetActive(false);
+                isCategoryMessageShown = false;
+                categoryMessageTimer = 0f;
 
             }
         }
@@ -146,6 +169,8 @@ public class PlayerController : MonoBehaviour
             Destroy(GameObject.FindGameObjectWithTag("Enemy"));
             goodMessage.gameObject.SetActive(false);
             badMessage.gameObject.SetActive(false);
+            rightCategoryMessage.gameObject.SetActive(false);
+            wrongCategoryMessage.gameObject.SetActive(false);
         }
     }
 
@@ -159,6 +184,8 @@ public class PlayerController : MonoBehaviour
             Destroy(gameObject);
             goodMessage.gameObject.SetActive(false);
             badMessage.gameObject.SetActive(false);
+            rightCategoryMessage.gameObject.SetActive(false);
+            wrongCategoryMessage.gameObject.SetActive(false);
         }
     }
 
@@ -178,26 +205,7 @@ public class PlayerController : MonoBehaviour
             audioSource.clip = coin;
             audioSource.Play();
         }
-
-        if (other.gameObject.CompareTag("Insult") && messages2[currentMessage].isToxic == ToxicType.Insult)
-        {
-            livesCount = livesCount + 1;
-        }
-
-        if (other.gameObject.CompareTag("Disruption of Gameplay") && messages2[currentMessage].isToxic == ToxicType.Disruption)
-        {
-            livesCount = livesCount + 1;
-        }
-
-        if (other.gameObject.CompareTag("Threat") && messages2[currentMessage].isToxic == ToxicType.Threat)
-        {
-            livesCount = livesCount + 1;
-        }
-
-        if (other.gameObject.CompareTag("Ill Wish") && messages2[currentMessage].isToxic == ToxicType.IllWish)
-        {
-            livesCount = livesCount + 1;
-        }
+        
     }
 
     private void OnCollisionEnter(Collision collision)
@@ -217,11 +225,48 @@ public class PlayerController : MonoBehaviour
                 audioSource.clip = ribbit;
                 audioSource.Play();
                 Enemy.GetComponent<EnemyMovement>().Die();
-                
                 goodMessage.gameObject.SetActive(false);
                 badMessage.gameObject.SetActive(false);
+                rightCategoryMessage.gameObject.SetActive(false);
+                wrongCategoryMessage.gameObject.SetActive(false);
             }
             
         }
+    }
+
+    public Messages GetCurrentMessage()
+    {
+        return messages2[currentMessage];
+    }
+    public void IncreaseLife()
+    {
+        livesCount++;
+        SetLivesText();
+    }
+    public void DecreaseSpeed()
+    {
+        speed = baseSpeed * 0.6f;
+    }
+
+    public void ResetPosition()
+    {
+        this.transform.position = respawnPoint.position;
+    }
+
+    public void RightCategory()
+    {
+        rightCategoryMessage.gameObject.SetActive(true);
+        wrongCategoryMessage.gameObject.SetActive(false);
+        goodMessage.gameObject.SetActive(false);
+        badMessage.gameObject.SetActive(false);
+        isCategoryMessageShown = true;
+    }
+    public void WrongCategory()
+    {
+        rightCategoryMessage.gameObject.SetActive(false);
+        wrongCategoryMessage.gameObject.SetActive(true);
+        goodMessage.gameObject.SetActive(false);
+        badMessage.gameObject.SetActive(false);
+        isCategoryMessageShown = true;
     }
 }
