@@ -42,10 +42,8 @@ public class PlayerController : MonoBehaviour
     public float messageInterval = 10f;
     private float messageTimer;
     public float feedbackMessageInterval = 5f;
-    private float feedbackMessageTimer;
     private bool isFeedbackMessageShown = false;
     public float categoryMessageInterval = 5f;
-    private float categoryMessageTimer;
     private bool isCategoryMessageShown = false;
     private bool isToxiFollowing = true;
     public float baseSpeed = 0;
@@ -55,12 +53,14 @@ public class PlayerController : MonoBehaviour
     public AudioSource audioSource;
     public Transform respawnPoint;
     public Transform quizLocation;
+    public bool isGameRunning;
 
 
     
     // Start is called before the first frame update
     void Start()
     {
+        isGameRunning = true;
         speed = baseSpeed;
         rb = GetComponent<Rigidbody>();
         count = 0;
@@ -68,7 +68,10 @@ public class PlayerController : MonoBehaviour
         SetCountText();
         SetLivesText();
         winTextObject.SetActive(false);
-        ShowNextMessage();
+
+        messageInterval = 0;
+        StartCoroutine(ShowNextMessage());
+        
         goodMessage.gameObject.SetActive(false);
         badMessage.gameObject.SetActive(false);
         rightCategoryMessage.gameObject.SetActive(false);
@@ -76,82 +79,28 @@ public class PlayerController : MonoBehaviour
         //this.transform.position = quizLocation.position;
     }
 
-    void ShowNextMessage()
-    {
-        currentMessage = UnityEngine.Random.Range(0, messages2.Count);
-        currentUsername = UnityEngine.Random.Range(0, messages2.Count);
-        messageText.GetComponent<TextMeshProUGUI>().text = messages2[currentMessage].messageText;
-        usernameText.GetComponent<TextMeshProUGUI>().text = messages2[currentUsername].username;
-        if (messages2[currentMessage].isToxic != ToxicType.Not)
-        {
-            isToxiFollowing = false;
-        }
-    }
+   
 
     void OnReport()
     {
         isFeedbackMessageShown = true;
-        feedbackMessageTimer = 0f;
+        
         if (messages2[currentMessage].isToxic == ToxicType.Not)
         {
             speed = baseSpeed * 0.6f;
-            goodMessage.gameObject.SetActive(false);
-            badMessage.gameObject.SetActive(true);
-            rightCategoryMessage.gameObject.SetActive(false);
-            wrongCategoryMessage.gameObject.SetActive(false);
+            BadMessage();
+            Enemy.GetComponent<EnemyMovement>().ToxicGas();
         }
         else
         {
             speed = baseSpeed * 1.2f;
-            goodMessage.gameObject.SetActive(true);
-            badMessage.gameObject.SetActive(false);
-            rightCategoryMessage.gameObject.SetActive(false);
-            wrongCategoryMessage.gameObject.SetActive(false);
+            GoodMessage();
             Enemy.GetComponent<EnemyMovement>().stopChasingPlayer();
             messageInterval = 15f;
             this.transform.position = quizLocation.position;
         }
     }
 
-
-
-    private void Update()
-    {
-        messageTimer = messageTimer + Time.deltaTime;
-        if (messageTimer > messageInterval)
-        {
-            ShowNextMessage();
-            messageTimer = 0f;
-            messageInterval = 7f;
-           
-        }
-
-        if (isFeedbackMessageShown == true)
-        {
-            feedbackMessageTimer = feedbackMessageTimer + Time.deltaTime;
-            if (feedbackMessageTimer > feedbackMessageInterval)
-            {
-                goodMessage.gameObject.SetActive(false);
-                badMessage.gameObject.SetActive(false);
-                isFeedbackMessageShown = false;
-                feedbackMessageTimer = 0f;
-
-            }
-        }
-
-        if (isCategoryMessageShown == true)
-        {
-            categoryMessageTimer = categoryMessageTimer + Time.deltaTime;
-            if (categoryMessageTimer > categoryMessageInterval)
-            {
-                rightCategoryMessage.gameObject.SetActive(false);
-                wrongCategoryMessage.gameObject.SetActive(false);
-                isCategoryMessageShown = false;
-                categoryMessageTimer = 0f;
-
-            }
-        }
-    }
     void OnMove(InputValue movementValue)
     {
         Vector2 movementVector = movementValue.Get<Vector2>();
@@ -165,6 +114,7 @@ public class PlayerController : MonoBehaviour
         countText.text = "Count: " + count.ToString() + "/20";
         if (count >= 20)
         {
+            isGameRunning = false;
             winTextObject.SetActive(true);
             Destroy(GameObject.FindGameObjectWithTag("Enemy"));
             goodMessage.gameObject.SetActive(false);
@@ -179,6 +129,7 @@ public class PlayerController : MonoBehaviour
         livesText.text = "Lives: " + livesCount.ToString();
         if (livesCount <= 0)
         {
+            isGameRunning = false;
             winTextObject.gameObject.SetActive(true);
             winTextObject.GetComponent<TextMeshProUGUI>().text = "You Lose!";
             Destroy(gameObject);
@@ -221,6 +172,7 @@ public class PlayerController : MonoBehaviour
             }
             else
             {
+                isGameRunning = false;
                 winTextObject.SetActive(true);
                 audioSource.clip = ribbit;
                 audioSource.Play();
@@ -255,18 +207,64 @@ public class PlayerController : MonoBehaviour
 
     public void RightCategory()
     {
-        rightCategoryMessage.gameObject.SetActive(true);
-        wrongCategoryMessage.gameObject.SetActive(false);
-        goodMessage.gameObject.SetActive(false);
-        badMessage.gameObject.SetActive(false);
-        isCategoryMessageShown = true;
+        StartCoroutine(ShowMessageCategory(true));
     }
     public void WrongCategory()
     {
-        rightCategoryMessage.gameObject.SetActive(false);
-        wrongCategoryMessage.gameObject.SetActive(true);
+        StartCoroutine(ShowMessageCategory(false));
+    }
+
+    private IEnumerator ShowMessageCategory(bool isRight)
+    {
+        rightCategoryMessage.gameObject.SetActive(isRight);
+        wrongCategoryMessage.gameObject.SetActive(!isRight);
         goodMessage.gameObject.SetActive(false);
         badMessage.gameObject.SetActive(false);
-        isCategoryMessageShown = true;
+
+        yield return new WaitForSeconds(categoryMessageInterval);
+
+        rightCategoryMessage.gameObject.SetActive(false);
+        wrongCategoryMessage.gameObject.SetActive(false);
+    }
+
+    public void GoodMessage()
+    {
+        StartCoroutine(ShowFeedbackMessage(true));
+    }
+    public void BadMessage()
+    {
+        StartCoroutine(ShowFeedbackMessage(false));
+    }
+    private IEnumerator ShowFeedbackMessage(bool isRight)
+    {
+        goodMessage.gameObject.SetActive(isRight);
+        badMessage.gameObject.SetActive(!isRight);
+        rightCategoryMessage.gameObject.SetActive(false);
+        wrongCategoryMessage.gameObject.SetActive(false);
+
+        yield return new WaitForSeconds(feedbackMessageInterval);
+
+        goodMessage.gameObject.SetActive(false);
+        badMessage.gameObject.SetActive(false);
+    }
+    private IEnumerator ShowNextMessage()
+    {
+        if (!isGameRunning)
+            yield return null;
+
+        yield return new WaitForSeconds(messageInterval);
+        messageInterval = 7;
+
+        currentMessage = UnityEngine.Random.Range(0, messages2.Count);
+        currentUsername = UnityEngine.Random.Range(0, messages2.Count);
+        messageText.GetComponent<TextMeshProUGUI>().text = messages2[currentMessage].messageText;
+        usernameText.GetComponent<TextMeshProUGUI>().text = messages2[currentUsername].username;
+        if (messages2[currentMessage].isToxic != ToxicType.Not)
+        {
+            isToxiFollowing = false;
+        }
+
+        yield return new WaitForEndOfFrame();
+        yield return ShowNextMessage();
     }
 }

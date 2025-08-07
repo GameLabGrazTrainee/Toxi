@@ -19,6 +19,7 @@ public class EnemyMovement : MonoBehaviour
     public AudioClip ribbit;
     public AudioClip coin;
     public AudioSource audioSource;
+    public ParticleSystem toxicCloudParticles;
 
 
     // Start is called before the first frame update
@@ -97,6 +98,10 @@ public class EnemyMovement : MonoBehaviour
         GetComponent<Rigidbody>().velocity = Vector3.zero;
         animator.SetTrigger("FallDown");
         Destroy(this.gameObject, 5f);
+    }
 
+    public void ToxicGas()
+    {
+        toxicCloudParticles.Play();
     }
 }
