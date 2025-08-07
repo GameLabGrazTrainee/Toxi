@@ -169,6 +169,7 @@ public class PlayerController : MonoBehaviour
                 livesCount = livesCount - 1;
                 SetLivesText();
                 this.transform.position = respawnPoint.position;
+                speed = baseSpeed;
             }
             else
             {
