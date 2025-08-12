@@ -1,2 +1,2 @@
 # Toxi
-[Watch the demo](docs/demo.mov)
+[Watch the demo](docs/ToxiTrailer.mov)
